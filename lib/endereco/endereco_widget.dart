@@ -1,9 +1,10 @@
-import 'package:bloc_pattern/bloc_pattern.dart';
 import 'package:flutter/material.dart';
 import 'package:maps_test/endereco/endereco_bloc.dart';
 import 'package:maps_test/endereco/endereco_model.dart';
 import 'package:maps_test/endereco/endereco_tile.dart';
 import 'package:maps_test/helpers/map_helper.dart';
+import 'package:maps_test/home_bloc.dart';
+import 'package:provider/provider.dart';
 
 class EnderecoWidget extends StatefulWidget {
   @override
@@ -14,12 +15,12 @@ class EnderecoWidget extends StatefulWidget {
 
 class EnderecoWidgetState extends State<EnderecoWidget> {
   EnderecoBloc bloc;
+  HomeBloc get homeBloc => Provider.of<HomeBloc>(context);
 
   @override
   void initState() {
     super.initState();
     bloc = EnderecoBloc();
-    bloc.carregarEnderecos();
   }
 
   @override
@@ -30,8 +31,8 @@ class EnderecoWidgetState extends State<EnderecoWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<EnderecoBloc>(
-      bloc: bloc,
+    return Provider<EnderecoBloc>(
+      value: bloc,
       child: StreamBuilder<EnderecoModel>(
         stream: bloc.outEnderecoSelecionado,
         builder: (_, enderecoSnap) {
@@ -48,40 +49,35 @@ class EnderecoWidgetState extends State<EnderecoWidget> {
                 Card(
                   elevation: 5,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(5),
-                          topRight: Radius.circular(5),
-                          bottomLeft: Radius.circular(10),
-                          bottomRight: Radius.circular(10))),
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      top: enderecoSnap.hasData ? 0 : 70,
-                      bottom: 10,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(5),
+                      topRight: Radius.circular(5),
+                      bottomLeft: Radius.circular(10),
+                      bottomRight: Radius.circular(10),
                     ),
-                    child: StreamBuilder<List<EnderecoModel>>(
-                      stream: bloc.outEnderecos,
-                      builder: (_, snapshot) {
-                        if (!snapshot.hasData) {
-                          return SizedBox(
-                            height: 0,
-                          );
-                        } else {
-                          return AnimatedContainer(
-                            height: enderecoSnap.hasData ? 0 : 90,
-                            duration: Duration(milliseconds: 500),
-                            curve: Curves.ease,
-                            child: SingleChildScrollView(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: snapshot.data
-                                    .map((model) => EnderecoTile(model))
-                                    .toList(),
-                              ),
+                  ),
+                  child: StreamBuilder<List<EnderecoModel>>(
+                    stream: bloc.outEnderecos,
+                    builder: (_, snapshot) {
+                      if (!snapshot.hasData) {
+                        return SizedBox(height: 0);
+                      } else {
+                        return AnimatedContainer(
+                          height: enderecoSnap.hasData ? 0 : null,
+                          padding: EdgeInsets.only(top: 80),
+                          duration: Duration(milliseconds: 500),
+                          curve: Curves.ease,
+                          child: SingleChildScrollView(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: snapshot.data
+                                  .map((model) => EnderecoTile(model))
+                                  .toList(),
                             ),
-                          );
-                        }
-                      },
-                    ),
+                          ),
+                        );
+                      }
+                    },
                   ),
                 ),
                 Card(
@@ -102,7 +98,8 @@ class EnderecoWidgetState extends State<EnderecoWidget> {
                     padding: EdgeInsets.all(20),
                     child: enderecoSnap.hasData
                         ? _buildSelected(
-                            enderecoSnap.data) //EnderecoTile(enderecoSnap.data)
+                            enderecoSnap.data,
+                          ) //EnderecoTile(enderecoSnap.data)
                         : Row(
                             children: <Widget>[
                               Container(
@@ -115,7 +112,9 @@ class EnderecoWidgetState extends State<EnderecoWidget> {
                                 child: Text(
                                   "Para onde?",
                                   style: TextStyle(
-                                      fontSize: 20, color: Colors.black45),
+                                    fontSize: 20,
+                                    color: Colors.black45,
+                                  ),
                                 ),
                               )
                             ],
@@ -131,10 +130,10 @@ class EnderecoWidgetState extends State<EnderecoWidget> {
   }
 
   Widget _buildSelected(EnderecoModel model) {
-    return InkWell(
+    return GestureDetector(
       onTap: () {
-        MapHelper.mapController.clearMarkers();
-        bloc.selecionarEndereco(null);
+        bloc.inEnderecoSelecionado.add(null);
+        homeBloc.inMarkers.add([]);
       },
       child: Container(
         child: Row(
